@@ -1,0 +1,50 @@
+{
+  "id": "809b597d-5cf9-47f2-8335-0b9a135cdf8b",
+  "resumeId": "5cef673a-17c7-41aa-bbcc-cdcc27096b6e",
+  "jdId": null,
+  "resume": "test.pdf",
+  "analysis": {
+    "fitScore": 95,
+    "summary": "Sushant Singh Negi presents a strong technical profile with experience in AI, Generative AI, and backend development, complemented by a solid foundation in software engineering and a growing skillset in AI algorithms and chatbot development.  He demonstrates a passion for building scalable and intelligent applications.",
+    "matchingSkills": [
+      "Python",
+      "AI",
+      "Machine Learning",
+      "Pytorch",
+      "LangChain",
+      "Prompt Engineering",
+      "LLMs",
+      "Generative Ai",
+      "GenAI",
+      "Generative Ai",
+      "AI Algorithms",
+      "MongoDB",
+      "Express.js",
+      "Node.js",
+      "WebSocket",
+      "Azure OpenAI",
+      "Autogen"
+    ],
+    "missingSkills": ["AWS", "Kubernetes", "Docker"],
+    "strengths": [
+      "Strong technical skills in multiple AI domains",
+      "Experience with large-scale data pipelines and AI-powered chatbots"
+    ],
+    "weaknesses": [
+      "Limited experience with cloud infrastructure (AWS, Kubernetes, Docker)"
+    ],
+    "suggestedImprovements": [
+      {
+        "section": "Cloud Infrastructure",
+        "suggestion": "Consider adding experience with cloud platforms like AWS or Azure to enhance scalability and deployment capabilities."
+      },
+      {
+        "section": "System Design",
+        "suggestion": "Expand on system design skills by mentioning experience with microservices architecture or containerization technologies."
+      }
+    ],
+    "keywordGaps": ["AWS", "Kubernetes", "Docker"]
+  },
+  "model": "ai/gemma3:1b-q4_K_M",
+  "createdAt": "2026-10-14T06:16:59.829Z"
+}

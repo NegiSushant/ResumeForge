@@ -1,0 +1,52 @@
+{
+  "id": "770d22c2-65f4-49c2-bcbe-0a8e47662ba3",
+  "resumeId": "4931281f-8087-4707-ac35-9771247d4264",
+  "resume": "5fe3c178-bf12-4d08-9734-1400a6ae96fb.pdf",
+  "jdId": null,
+  "analysis": {
+    "fitScore": 100,
+    "summary": "Abhishek Sharma is a highly skilled ASP.NET MVC developer with experience in developing and deploying AI-powered applications using .NET, Azure, and SQL Server. He possesses strong skills in backend development, database design, and API integration.  He has a proven track record of delivering high-quality solutions and is proficient in various technologies.",
+    "matchingSkills": [
+      "ASP.NET MVC",
+      "C#",
+      "SQL Server",
+      "Entity Framework 6",
+      "Azure OpenAI",
+      "Azure AI Search",
+      "RESTful APIs",
+      "Object-Oriented Programming",
+      "Data Integration"
+    ],
+    "missingSkills": [
+      "Kendo UI",
+      "Azure DevOps"
+    ],
+    "strengths": [
+      "Proven experience in AI-powered chatbot development using .NET, Azure OpenAI, and Azure AI Search.",
+      "Strong database design and SQL Server expertise.",
+      "Experience with RESTful API design and integration.",
+      "Experience with data retrieval using LINQ joins."
+    ],
+    "weaknesses": [
+      "Limited experience with Kendo UI.",
+      "Lack of experience with Azure DevOps."
+    ],
+    "suggestedImprovements": [
+      {
+        "section": "Skills",
+        "suggestion": "Consider adding Kendo UI for UI component development and integration."
+      },
+      {
+        "section": "Projects",
+        "suggestion": "Expand on the AI Chatbot project, detailing the challenges faced and the solutions implemented in detail."
+      }
+    ],
+    "keywordGaps": [
+      "AI",
+      "Cloud",
+      "Data"
+    ]
+  },
+  "model": "ai/gemma3:1b-q4_K_M",
+  "createdAt": "2026-10-14T10:11:04.471Z"
+}
