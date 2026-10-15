@@ -1,106 +1,156 @@
 import { promises as fs } from "fs";
 import path from "path";
-import { v4 as uuidv4 } from "uuid";
+import os from "os";
+import mongoose from "mongoose";
 import { extractTextFromFile } from "./extract-text";
+import { connectToDatabase } from "./mongodb";
+import Resume from "@/models/Resume";
+import JobDescription from "@/models/JobDescription";
+import Analysis from "@/models/Analysis";
 
-const UPLOAD_DIR = path.join(process.cwd(), "data", "resumes");
-const JD_DIR = path.join(process.cwd(), "data", "job-descriptions");
-const ANALYSIS_DIR = path.join(process.cwd(), "data", "analyses");
+export async function saveResumeFile(file: File, userId: string) {
+  await connectToDatabase();
 
-export async function ensureAnalysisDir() {
-  await fs.mkdir(ANALYSIS_DIR, { recursive: true });
-}
+  // 1. Temporary write to extract text
+  const tempDir = os.tmpdir();
+  const tempFileName = `upload_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+  const tempFilePath = path.join(tempDir, tempFileName);
 
-export async function ensureUploadDir() {
-  await fs.mkdir(UPLOAD_DIR, { recursive: true });
-}
-
-export async function ensureJdDir() {
-  await fs.mkdir(JD_DIR, { recursive: true });
-}
-
-export async function saveResumeFile(file: File) {
-  await ensureUploadDir();
-
-  const resumeId = uuidv4();
-  const extension = file.name.split(".").pop()?.toLowerCase() || "bin";
-  const safeFileName = `${resumeId}.${extension}`;
-  const filePath = path.join(UPLOAD_DIR, safeFileName);
-
-  // 1. Save original file
   const buffer = Buffer.from(await file.arrayBuffer());
-  await fs.writeFile(filePath, buffer);
+  await fs.writeFile(tempFilePath, buffer);
 
   // 2. Extract text
   let extractedText = "";
   let extractionError: string | null = null;
 
   try {
-    extractedText = await extractTextFromFile(filePath, file.type);
+    extractedText = await extractTextFromFile(tempFilePath, file.type);
   } catch (err) {
     console.error("Text extraction failed:", err);
     extractionError =
       err instanceof Error ? err.message : "Unknown extraction error";
+  } finally {
+    // Clean up temporary file
+    try {
+      await fs.unlink(tempFilePath);
+    } catch {
+      // Ignore unlink errors
+    }
   }
 
-  // 3. Save metadata (now includes extracted text)
-  const metadata = {
-    id: resumeId,
+  // 3. Save to MongoDB
+  const resume = await Resume.create({
+    userId: new mongoose.Types.ObjectId(userId),
     originalName: file.name,
     mimeType: file.type,
-    size: file.size,
-    savedAt: new Date().toISOString(),
-    fileName: safeFileName,
-    extractedText, // ← the important part
-    extractionError, // null if successful
-  };
-
-  const metadataPath = path.join(UPLOAD_DIR, `${resumeId}.json`);
-  await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+    extractedText: extractedText || "",
+    fileData: buffer,
+  });
 
   return {
-    resumeId,
-    filePath,
-    metadata,
+    resumeId: resume._id.toString(),
+    metadata: {
+      id: resume._id.toString(),
+      originalName: resume.originalName,
+      mimeType: resume.mimeType,
+      extractedText: resume.extractedText,
+      extractionError,
+      savedAt: resume.createdAt.toISOString(),
+    },
   };
 }
 
-export async function saveJobDescription(options: {
-  text?: string;
-  file?: File;
-}) {
-  await ensureJdDir();
+export async function getResumeFile(resumeId: string, userId?: string) {
+  await connectToDatabase();
 
-  const jdId = uuidv4();
+  if (!mongoose.Types.ObjectId.isValid(resumeId)) {
+    return null;
+  }
+
+  const query: Record<string, unknown> = { _id: resumeId };
+  if (userId) {
+    query.userId = new mongoose.Types.ObjectId(userId);
+  }
+
+  const resume = await Resume.findOne(query);
+  if (!resume || !resume.fileData) {
+    return null;
+  }
+
+  return {
+    buffer: resume.fileData,
+    mimeType: resume.mimeType,
+    fileName: resume.originalName,
+  };
+}
+
+export async function getResumeById(resumeId: string, userId?: string) {
+  await connectToDatabase();
+
+  if (!mongoose.Types.ObjectId.isValid(resumeId)) {
+    return null;
+  }
+
+  const query: Record<string, unknown> = { _id: resumeId };
+  if (userId) {
+    query.userId = new mongoose.Types.ObjectId(userId);
+  }
+
+  const resume = await Resume.findOne(query);
+  if (!resume) return null;
+
+  return {
+    id: resume._id.toString(),
+    userId: resume.userId.toString(),
+    originalName: resume.originalName,
+    mimeType: resume.mimeType,
+    extractedText: resume.extractedText,
+    createdAt: resume.createdAt.toISOString(),
+  };
+}
+
+export async function saveJobDescription(
+  options: {
+    text?: string;
+    file?: File;
+  },
+  userId: string
+) {
+  await connectToDatabase();
+
   let finalText = "";
   let originalName: string | null = null;
   let mimeType: string | null = null;
-  let fileName: string | null = null;
   let extractionError: string | null = null;
 
-  // Case 1: Text was provided directly
+  // Case 1: Plain text provided
   if (options.text) {
     finalText = options.text.trim();
   }
 
-  // Case 2: File was uploaded
+  // Case 2: File uploaded
   if (options.file) {
-    const extension =
-      options.file.name.split(".").pop()?.toLowerCase() || "bin";
-    fileName = `${jdId}.${extension}`;
-    const filePath = path.join(JD_DIR, fileName);
+    const tempDir = os.tmpdir();
+    const tempFileName = `jd_${Date.now()}_${options.file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+    const tempFilePath = path.join(tempDir, tempFileName);
 
     const buffer = Buffer.from(await options.file.arrayBuffer());
-    await fs.writeFile(filePath, buffer);
+    await fs.writeFile(tempFilePath, buffer);
 
     originalName = options.file.name;
     mimeType = options.file.type;
 
     try {
-      finalText = await extractTextFromFile(filePath, options.file.type);
+      finalText = await extractTextFromFile(tempFilePath, options.file.type);
     } catch (err) {
       extractionError =
         err instanceof Error ? err.message : "Unknown extraction error";
+    } finally {
+      try {
+        await fs.unlink(tempFilePath);
+      } catch {
+        // Ignore unlink error
+      }
     }
   }
 
@@ -108,113 +158,170 @@ export async function saveJobDescription(options: {
     throw new Error("No valid job description content found");
   }
 
-  const metadata = {
-    id: jdId,
-    type: options.file ? "file" : "text",
-    originalName,
-    mimeType,
-    fileName,
+  const jd = await JobDescription.create({
+    userId: new mongoose.Types.ObjectId(userId),
     text: finalText,
-    characterCount: finalText.length,
-    extractionError,
-    savedAt: new Date().toISOString(),
-  };
-
-  const metadataPath = path.join(JD_DIR, `${jdId}.json`);
-  await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+  });
 
   return {
-    jdId,
-    metadata,
+    jdId: jd._id.toString(),
+    metadata: {
+      id: jd._id.toString(),
+      originalName,
+      mimeType,
+      text: finalText,
+      characterCount: finalText.length,
+      extractionError,
+      savedAt: jd.createdAt.toISOString(),
+    },
   };
 }
 
-export async function getResumeById(resumeId: string) {
-  const metadataPath = path.join(
-    process.cwd(),
-    "data",
-    "resumes",
-    `${resumeId}.json`,
-  );
+export async function getJobDescriptionById(jdId: string, userId?: string) {
+  await connectToDatabase();
 
-  try {
-    const raw = await fs.readFile(metadataPath, "utf-8");
-    return JSON.parse(raw);
-  } catch (err) {
-    console.log(`Error: ${err}`);
+  if (!mongoose.Types.ObjectId.isValid(jdId)) {
     return null;
   }
-}
 
-export async function getJobDescriptionById(jdId: string) {
-  const metadataPath = path.join(
-    process.cwd(),
-    "data",
-    "job-descriptions",
-    `${jdId}.json`,
-  );
-
-  try {
-    const raw = await fs.readFile(metadataPath, "utf-8");
-    return JSON.parse(raw);
-  } catch {
-    return null;
+  const query: Record<string, unknown> = { _id: jdId };
+  if (userId) {
+    query.userId = new mongoose.Types.ObjectId(userId);
   }
+
+  const jd = await JobDescription.findOne(query);
+  if (!jd) return null;
+
+  return {
+    id: jd._id.toString(),
+    userId: jd.userId.toString(),
+    text: jd.text,
+    createdAt: jd.createdAt.toISOString(),
+  };
 }
 
 export async function saveAnalysis(options: {
+  userId: string;
   resumeId: string;
   jdId?: string | null;
   resume: string | null;
+  jobDescription?: string;
+  resumeText?: string;
   analysis: any;
   model: string;
 }) {
-  await ensureAnalysisDir();
+  await connectToDatabase();
 
-  const analysisId = uuidv4();
+  const fitScore =
+    typeof options.analysis?.fitScore === "number"
+      ? options.analysis.fitScore
+      : 0;
 
-  const record = {
-    id: analysisId,
+  const record = await Analysis.create({
+    userId: new mongoose.Types.ObjectId(options.userId),
     resumeId: options.resumeId,
-    resume: options.resume,
+    resumename: options.resume || "",
     jdId: options.jdId || null,
+    jobDescription: options.jobDescription || "",
     analysis: options.analysis,
+    fitScore,
     model: options.model,
-    createdAt: new Date().toISOString(),
+  });
+
+  return {
+    id: record._id ? record._id.toString() : "",
+    resumeId: record.resumeId,
+    resume: record.resumename,
+    resumeText: options.resumeText || "",
+    jobDescription: record.jobDescription || "",
+    jdId: record.jdId,
+    analysis: record.analysis,
+    fitScore: record.fitScore,
+    model: record.model,
+    createdAt: record.createdAt ? record.createdAt.toISOString() : new Date().toISOString(),
   };
-
-  const filePath = path.join(ANALYSIS_DIR, `${analysisId}.json`);
-  await fs.writeFile(filePath, JSON.stringify(record, null, 2));
-
-  return record;
 }
 
-export async function getAnalysisById(analysisId: string) {
-  const filePath = path.join(ANALYSIS_DIR, `${analysisId}.json`);
+export async function getAnalysisById(analysisId: string, userId?: string) {
+  await connectToDatabase();
 
-  try {
-    const raw = await fs.readFile(filePath, "utf-8");
-    return JSON.parse(raw);
-  } catch {
+  if (!mongoose.Types.ObjectId.isValid(analysisId)) {
     return null;
   }
+
+  const query: Record<string, unknown> = { _id: analysisId };
+  if (userId) {
+    query.userId = new mongoose.Types.ObjectId(userId);
+  }
+
+  const item: any = await Analysis.findOne(query);
+  if (!item) return null;
+
+  let resumeText = "";
+  let resumeMimeType = "";
+  let hasResumeFile = false;
+  if (item.resumeId && mongoose.Types.ObjectId.isValid(item.resumeId.toString())) {
+    try {
+      const resumeDoc = await Resume.findById(item.resumeId);
+      if (resumeDoc) {
+        resumeText = resumeDoc.extractedText || "";
+        resumeMimeType = resumeDoc.mimeType || "";
+        hasResumeFile = Boolean(resumeDoc.fileData);
+      }
+    } catch (e) {
+      console.error("Failed to load resume text:", e);
+    }
+  }
+
+  let jobDescription = item.jobDescription || "";
+  if (!jobDescription && item.jdId && mongoose.Types.ObjectId.isValid(item.jdId.toString())) {
+    try {
+      const jdDoc = await JobDescription.findById(item.jdId);
+      if (jdDoc) {
+        jobDescription = jdDoc.text || "";
+      }
+    } catch (e) {
+      console.error("Failed to load jd text:", e);
+    }
+  }
+
+  return {
+    id: item._id ? item._id.toString() : "",
+    userId: item.userId?.toString(),
+    resumeId: item.resumeId?.toString(),
+    resumeUrl: item.resumeId ? `/api/resumes/${item.resumeId}/file` : undefined,
+    resumeMimeType,
+    hasResumeFile,
+    fileName: item.resumename,
+    resumeText,
+    jobDescription,
+    jdId: item.jdId?.toString() || null,
+    analysis: item.analysis,
+    fitScore: item.fitScore,
+    model: item.model,
+    createdAt: item.createdAt ? item.createdAt.toISOString() : new Date().toISOString(),
+  };
 }
-export async function getAllAnalysis() {
-  try {
-    // await fs.mkdir(ANALYSIS_DIR, { recursive: true });
 
-    const files = await fs.readdir(ANALYSIS_DIR);
-    const jsonFiles = files.filter((file) => file.endsWith(".json"));
+export async function getAllAnalysis(userId: string) {
+  await connectToDatabase();
 
-    const analyses = await Promise.all(
-      jsonFiles.map(async (file) => {
-        const filePath = path.join(ANALYSIS_DIR, file);
-        const raw = await fs.readFile(filePath, "utf-8");
-        return JSON.parse(raw);
-      }),
-    );
-    return analyses;
-  } catch {
-    return null;
+  if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+    return [];
   }
+
+  const records = await Analysis.find({
+    userId: new mongoose.Types.ObjectId(userId),
+  }).sort({ createdAt: -1 });
+
+  return records.map((item: any) => ({
+    id: item._id ? item._id.toString() : "",
+    resumeId: item.resumeId?.toString(),
+    fileName: item.resumename,
+    jdId: item.jdId?.toString() || null,
+    fitScore: item.analysis?.fitScore ?? item.fitScore ?? null,
+    summary: item.analysis?.summary ?? "",
+    model: item.model,
+    createdAt: item.createdAt ? item.createdAt.toISOString() : new Date().toISOString(),
+  }));
 }

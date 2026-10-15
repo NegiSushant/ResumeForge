@@ -39,11 +39,31 @@ export const jdFileSchema = z.object({
 
 export const analyzeSchema = z
   .object({
-    resumeId: z.string().uuid("Invalid resumeId"),
-    jdId: z.string().uuid("Invalid jdId").optional(),
-    jdText: z.string().min(50).max(20000).optional(),
+    resumeId: z.string().min(1, "Invalid resumeId"),
+    jdId: z.string().min(1, "Invalid jdId").optional(),
+    jdText: z.string().min(50, "Job description is too short (minimum 50 characters)").max(20000).optional(),
   })
   .refine((data) => data.jdId || data.jdText, {
     message: "Either jdId or jdText must be provided",
     path: ["jdId"],
   });
+
+export const analysisResultSchema = z.object({
+  fitScore: z.number().min(0).max(100),
+  scoreExplanation: z.string(),
+  summary: z.string(),
+  matchingSkills: z.array(z.string()),
+  missingSkills: z.array(z.string()),
+  strengths: z.array(z.string()),
+  weaknesses: z.array(z.string()),
+  suggestedImprovements: z.array(
+    z.object({
+      section: z.string(),
+      suggestion: z.string(),
+    })
+  ),
+  keywordGaps: z.array(z.string()),
+});
+
+export type AnalysisResult = z.infer<typeof analysisResultSchema>;
+

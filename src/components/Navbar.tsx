@@ -15,17 +15,16 @@ export default function Navbar() {
 
         <Suspense
           fallback={
-            <nav className="flex items-center gap-6 sm:gap-8 text-sm">
-              <Link href="/" className="text-gray-400 pb-1">
-                Home
-              </Link>
-              <Link href="/analyze" className="text-gray-400 pb-1">
-                Analyze
-              </Link>
-              <Link href="/history" className="text-gray-400 pb-1">
-                History
-              </Link>
-            </nav>
+            <div className="flex items-center gap-5 sm:gap-8 text-sm">
+              <nav className="flex items-center gap-5 sm:gap-8">
+                <span className="text-gray-400 pb-1">Home</span>
+                <span className="text-gray-400 pb-1">Analyze</span>
+                <span className="text-gray-400 pb-1">History</span>
+              </nav>
+              <div className="border-l border-gray-800 pl-4 sm:pl-6 text-xs text-gray-400">
+                Sign In
+              </div>
+            </div>
           }
         >
           <NavLinks />

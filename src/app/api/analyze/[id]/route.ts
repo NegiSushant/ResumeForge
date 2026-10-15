@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { getAnalysisById } from "@/lib/storage";
 
 export async function GET(
@@ -6,6 +7,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized. Please sign in." },
+        { status: 401 }
+      );
+    }
+
     const { id } = await params;
 
     if (!id) {
@@ -15,11 +24,11 @@ export async function GET(
       );
     }
 
-    const analysis = await getAnalysisById(id);
+    const analysis = await getAnalysisById(id, session.user.id);
 
     if (!analysis) {
       return NextResponse.json(
-        { error: "Analysis not found" },
+        { error: "Analysis not found or access denied" },
         { status: 404 },
       );
     }

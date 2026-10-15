@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { jdTextSchema, jdFileSchema } from "@/lib/schemas";
 import { saveJobDescription } from "@/lib/storage";
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized. Please sign in to save job descriptions." },
+        { status: 401 }
+      );
+    }
+
     const contentType = request.headers.get("content-type") || "";
 
     // ---------- Case A: JSON body (plain text) ----------
@@ -17,13 +26,16 @@ export async function POST(request: NextRequest) {
             error: "Validation failed",
             details: validation.error.flatten().fieldErrors,
           },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
-      const { jdId, metadata } = await saveJobDescription({
-        text: validation.data.text,
-      });
+      const { jdId, metadata } = await saveJobDescription(
+        {
+          text: validation.data.text,
+        },
+        session.user.id
+      );
 
       return NextResponse.json(
         {
@@ -33,7 +45,7 @@ export async function POST(request: NextRequest) {
           characterCount: metadata.characterCount,
           type: "text",
         },
-        { status: 201 },
+        { status: 201 }
       );
     }
 
@@ -45,7 +57,7 @@ export async function POST(request: NextRequest) {
       if (!file || !(file instanceof File)) {
         return NextResponse.json(
           { error: "No file uploaded" },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -57,13 +69,16 @@ export async function POST(request: NextRequest) {
             error: "Validation failed",
             details: validation.error.flatten().fieldErrors,
           },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
-      const { jdId, metadata } = await saveJobDescription({
-        file: validation.data.file,
-      });
+      const { jdId, metadata } = await saveJobDescription(
+        {
+          file: validation.data.file,
+        },
+        session.user.id
+      );
 
       return NextResponse.json(
         {
@@ -75,7 +90,7 @@ export async function POST(request: NextRequest) {
           extractionError: metadata.extractionError,
           type: "file",
         },
-        { status: 201 },
+        { status: 201 }
       );
     }
 
@@ -84,13 +99,13 @@ export async function POST(request: NextRequest) {
         error:
           "Unsupported Content-Type. Use application/json or multipart/form-data",
       },
-      { status: 400 },
+      { status: 400 }
     );
   } catch (error) {
     console.error("JD upload error:", error);
     return NextResponse.json(
       { error: "Failed to process job description" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -7,10 +7,15 @@ import AnalysisResults from "@/components/AnalysisResults";
 interface AnalysisDetail {
   id: string;
   resumeId: string;
+  resumeUrl?: string;
+  hasResumeFile?: boolean;
   jdId: string | null;
   fileName: string | null;
+  resumeText?: string;
+  jobDescription?: string;
   analysis: {
     fitScore: number;
+    scoreExplanation?: string;
     summary: string;
     matchingSkills: string[];
     missingSkills: string[];
@@ -111,7 +116,13 @@ function AnalysisDetailContent({
           </Link>
         </div>
 
-        <AnalysisResults analysis={data.analysis} onReset={reset} />
+        <AnalysisResults
+          analysis={data.analysis}
+          resumeText={data.resumeText}
+          resumeUrl={data.resumeUrl || (data.resumeId ? `/api/resumes/${data.resumeId}/file` : undefined)}
+          jobDescription={data.jobDescription}
+          onReset={reset}
+        />
       </main>
     </div>
   );

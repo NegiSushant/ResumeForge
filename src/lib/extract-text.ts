@@ -1,12 +1,9 @@
 import { promises as fs } from "fs";
 import mammoth from "mammoth";
 
-// Extract text from a PDF file using pdfjs-dist (server-side safe)
 async function extractFromPdf(filePath: string): Promise<string> {
-  // Dynamic import is more reliable in Next.js API routes
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
 
-  // Set the worker source using import.meta.url
   pdfjs.GlobalWorkerOptions.workerSrc = new URL(
     "pdfjs-dist/legacy/build/pdf.worker.min.mjs",
     import.meta.url,
