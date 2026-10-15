@@ -11,7 +11,6 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![MongoDB](https://img.shields.io/badge/MongoDB-7-green?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com)
 [![Docker](https://img.shields.io/badge/Docker-Model_Runner-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docs.docker.com/desktop/features/model-runner/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](./LICENSE)
 
 </div>
 
@@ -19,15 +18,15 @@
 
 ## 📸 Screenshots
 
-> **Live Demo Screenshots — Coming Soon**
+> **Demo Screenshots**
 
 | Landing Page | Analyze Page | Results View |
 |---|---|---|
-| *(screenshot placeholder)* | *(screenshot placeholder)* | *(screenshot placeholder)* |
+| *![alt text](images/image.png) ![alt text](images/image-1.png) ![alt text](images/image-2.png)* | *![alt text](images/image-3.png)* | *![alt text](images/image-4.png) ![alt text](images/image-5.png) ![alt text](images/image-6.png)* |
 
-| History Page | Resume PDF Viewer | Score Breakdown |
-|---|---|---|
-| *(screenshot placeholder)* | *(screenshot placeholder)* | *(screenshot placeholder)* |
+| History Page | Resume PDF Viewer |
+|---|---|
+| *![alt text](images/image-7.png)* | *![alt text](images/image-8.png)* |
 
 ---
 
@@ -348,9 +347,6 @@ resumeforge/
 
 ## 📄 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](./LICENSE) file for details.
-
-You are free to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of this software, subject to the conditions of the MIT License.
 
 ---
 
